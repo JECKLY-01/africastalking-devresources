@@ -1,52 +1,49 @@
 const express = require("express");
-
+const fs = require("fs");
+const path = require("path");
 const router = express.Router();
 
+const patients = [
+  { name: "John Mwangi", county: "Nyeri", phone: "+254711000001", appointment: "2025-07-05 10:00", language: "en" },
+  { name: "Amina Hassan", county: "Garissa", phone: "+254722000002", appointment: "2025-07-06 09:30", language: "sw" },
+  { name: "Peter Odhiambo", county: "Kisumu", phone: "+254733000003", appointment: "2025-07-06 14:00", language: "en" }
+];
+
+const logAction = (phone, action) => {
+  const entry = { phone, action, timestamp: new Date().toISOString() };
+  const logPath = path.join(__dirname, "patient_logs.json");
+  const logs = fs.existsSync(logPath) ? JSON.parse(fs.readFileSync(logPath)) : [];
+  logs.push(entry);
+  fs.writeFileSync(logPath, JSON.stringify(logs, null, 2));
+};
+
 router.post("/ussd", (req, res) => {
-
-  // Read variables sent via POST from our SDK
-  
-  const { sessionId, serviceCode, phoneNumber, text } = req.body;
-
-  console.log('####################', req.body);
+  const { phoneNumber, text } = req.body;
+  const inputs = text.split("*");
   let response = "";
 
-  // Chained IF statements will take us through the USSD logic
-  if (text === "") {
-    console.log(text);
-    // This is the first request 
-    // Start responses with CON if they have further options/they CONtinue
-    response = `CON Welcome to our USSD demo! Choose an option to proceed:
-        1. New to Africa's Talking
-        2. O.G. Member `;
-  } else if (text === "1") {
-    // Business logic for first level response
-    // response = `CON Please enter your registration number:
-    //     1. Yes
-    //     2. No`;
-    response = `CON Do you have an account?
-    1. Yes
-    2. No `;
+  const patient = patients.find(p => p.phone === phoneNumber);
 
-  } else if (text === "2") {
-    // Business logic for first level response, option 2
-    // Start the response with END since it does not proceed further, (terminal request) it ENDs
-    response = `END Welcome back, glad you're here. Your phone number is ${phoneNumber}.`;
-  } else if (text === "1*1") {
-    // This is a second level response
-    // 1 was selected in the first level, 1 in the second level
-    const accountNumber = "ACC100101";
-    // The response starts with END since it is a terminal request
-    response = `END That's true:). Your account number is ${accountNumber}`;
-  } else if (text === "1*2") {
-    // This is a second level response
-    // 1 was selected in the first level, 2 in the second level
-    // The response starts with END since it is a terminal request
-    response = `END What are waiting for? Create an account at developers.africastalking.com. Looking forward to having you!`;
+  if (!patient) {
+    response = `END Sorry, you're not registered.`;
+  } else if (text === "") {
+    response = `CON Hello ${patient.name},\n1. View Appointment\n2. Confirm Attendance\n3. Reschedule\n4. Request Transport`;
+  } else if (inputs[0] === "1") {
+    response = `END Your appointment is on ${patient.appointment}`;
+  } else if (inputs[0] === "2") {
+    logAction(phoneNumber, "Confirmed Appointment");
+    response = `END Thank you. You've confirmed your appointment.`;
+  } else if (inputs[0] === "3") {
+    logAction(phoneNumber, "Requested Reschedule");
+    response = `END A health worker will contact you to reschedule.`;
+  } else if (inputs[0] === "4") {
+    logAction(phoneNumber, "Requested Transport");
+    response = `END Transport request received. We will reach out shortly.`;
+  } else {
+    response = `END Invalid option.`;
   }
 
-  // Print the response onto the page so that our SDK can read it
-  res.set("Content-Type: text/plain");
+  res.set("Content-Type", "text/plain");
   res.send(response);
 });
 

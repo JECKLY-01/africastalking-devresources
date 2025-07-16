@@ -1,0 +1,17 @@
+[
+  {
+    "phone": "+254711000001",
+    "action": "Confirmed Appointment",
+    "timestamp": "2025-07-03T09:33:14.328Z"
+  },
+  {
+    "phone": "+254711000001",
+    "action": "Requested Reschedule",
+    "timestamp": "2025-07-03T09:33:42.480Z"
+  },
+  {
+    "phone": "+254711000001",
+    "action": "Requested Transport",
+    "timestamp": "2025-07-03T09:33:51.596Z"
+  }
+]
